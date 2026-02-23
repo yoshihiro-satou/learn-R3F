@@ -3,6 +3,7 @@ import { Canvas, useLoader } from "@react-three/fiber";
 import { GLTFLoader } from "three/examples/jsm/Addons.js"; // これでも動作するが型エラーが出るため、three-stdlibパッケージを追加し使用。
 // import { GLTFLoader } from "three-stdlib";
 import "./App.css";
+import { Box } from "./Box";
 
 const Model = () => {
   // 3Dモデルの読み込み
@@ -70,6 +71,7 @@ const App = () => {
             <boxGeometry args={[100, 0.1, 100]} />
             <meshBasicMaterial color={"#ececec"} />
           </mesh>
+          <Box />
         </Canvas>
       </div>
   );
