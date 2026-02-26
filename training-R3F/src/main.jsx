@@ -5,6 +5,7 @@ import './index.css'
 import App from './App.jsx'
 import Examples from './pages/Examples.jsx'
 import Example1 from './pages/Example1.jsx'
+import Example2 from './pages/Example2.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -12,7 +13,8 @@ createRoot(document.getElementById('root')).render(
       <Routes>
         <Route index element={<App />}/>
         <Route path="examples" element={<Examples />} >
-          <Route index element={<Example1 />} />
+          <Route path="example1" element={<Example1 />} />
+          <Route path="example2" element={<Example2 />} />
         </Route>
       </Routes>
     </BrowserRouter>
