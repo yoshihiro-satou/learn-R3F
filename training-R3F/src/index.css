@@ -10,3 +10,16 @@ body,
   margin: 0;
   padding: 0;
 }
+.scroll {
+  position: absolute;
+  width: 100vw;
+  height: 100vh;
+  overflow-y: auto;
+  top: 0;
+  left: 0;
+}
+h1 {
+  font-size: 3em;
+  letter-spacing: -3px;
+  line-height: 0.7em;
+}
