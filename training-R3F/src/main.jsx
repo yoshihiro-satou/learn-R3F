@@ -11,6 +11,7 @@ import Example4 from './pages/Example4.jsx'
 import Example5 from './pages/Example5.jsx'
 import Example6 from './pages/Example6.jsx'
 import Example7 from './pages/Example7.jsx'
+import Example8 from './pages/Example8.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -25,6 +26,7 @@ createRoot(document.getElementById('root')).render(
           <Route path="example5" element={<Example5 />} />
           <Route path="example6" element={<Example6 />} />
           <Route path="example7" element={<Example7 />} />
+          <Route path="example8" element={<Example8 />} />
         </Route>
       </Routes>
     </BrowserRouter>
