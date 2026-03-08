@@ -1,111 +1,175 @@
-import { useState, useRef } from "react";
-import { Canvas, useFrame } from '@react-three/fiber'
+import { useState, useEffect } from "react";
+import { Canvas } from '@react-three/fiber'
 import { Physics , RigidBody, CuboidCollider } from '@react-three/rapier'
 import { OrbitControls, Environment, Text } from '@react-three/drei'
 import * as THREE from 'three'
-
-const Bucket = ({ onCapture }) => {
-  const ref = useRef()
-
-  useFrame(({ pointer, viewport }) => {
-    if(ref.current) {
-      // 1. マウスの座標を3D空間の座標に変換
-      const targetX = (pointer.x * viewport.width) / 2
-
-      // 2. bucket全体(見た目＋センサー)を移動させる
-      // ※ lerp を使って滑らかに動かします(0.1 = 10%づつ追従)
-      const currentPos = ref.current.translation()
-      ref.current.setTranslation({
-        x: THREE.MathUtils.lerp(currentPos.x, targetX, 0.1),
-        y: 0,
-        z: 0
-      }, true)
-    }
-  })
-  return (
-    // group ではなく RigidBody 自体を ref で操作します
-    <RigidBody
-      ref={ref}
-      type="fixed"
-      colliders={false} // 自動コライダーはオフにして、中身で定義する
-      restitution={2.1} // 反発係数を追加するともっと跳ねます！
-    >
-      {/* 見た目のバケツ */}
-      <mesh receiveShadow position={[0, -0.4, 0]}>
-        <boxGeometry args={[2, 0.2, 2]} />
-        <meshStandardMaterial color="#444" />
-        <CuboidCollider args={[1, 0.1, 1]} position={[0, -0.4, 0]} />
-      </mesh>
-
-      {/* センサーエリア */}
-      <CuboidCollider
-        args={[0.8, 0.5, 0.8]}
-        sensor
-        onIntersectionEnter={({ other }) => {
-          const hitId = other.rigidBodyObject.name
-          onCapture(hitId)
-        }}
-      />
-    </RigidBody>
-  )
-}
+import Particle from './Particle'
+import Bucket from './Bucket'
 
 const Example8 = () => {
   const [score, setScore] = useState(0)
+  const[miss, setMiss] = useState(0)
+  const[particles, setParticles] = useState([])
+  const[isPlaying, setIsPlaying] = useState(false) // 1.ゲーム進行フラグ
+  const[hasStarted, setHasStarted] = useState(false)
+  // 2. リスタート関数
+  const startGame = () => {
+    setScore(0)
+    setMiss(0)
+    setBalls([])
+    setParticles([])
+    setIsPlaying(true)
+    setHasStarted(true)
+  }
+  // 3. ミスが10回になったらゲームストップ
+  useEffect(() => {
+    if(miss >=10) {
+      setIsPlaying(false)
+    }
+  }, [miss])
 
-  // ランダムな位置にボールを配置
-  // const balls = useMemo(() => Array.from({ length: 10 }, (_, i) => ({
-  //   id: i,
-  //   position: [(Math.random() - 0.5) * 4, 10 + i * 5, 0]
-  // })), [])
+  // 4. タイマー(isPlaying が true の時だけ動かす)
+  useEffect(() => {
+    if(!isPlaying) return // ゲームオーバーなら何もしない
+
+    const interval = setInterval(() => {
+      setBalls((prev) => [
+        ...prev, {
+          id: `ball-${Date.now()}`, // 重複しないように現在の時刻をIDにする
+          position: [(Math.random() - 0.5) * 8, 10, 0] // 横幅bを少し広げて降らせる
+        }
+      ])
+    }, 1300) // 2秒ごとに1個追加(ここを短くすると難易度アップ)
+    return () => clearInterval(interval) // コンポーネントが消える時にタイマーを止める
+  },[isPlaying]) //isPlayingが変わるたびに再設定
 
   // 1. ボールを state で管理する
   const[balls, setBalls] = useState(() => {
-     return Array.from({ length: 10 }, (_, i) => ({
+    return Array.from({ length: 10 }, (_, i) => ({
       id: `ball-${i}`, //個別にIDをふる
       position: [(Math.random() - 0.5) * 4, 10 + i * 3, 0]
     }))
   })
 
+  // 爆発エフェクトを発生させる関数
+  const createExplosion = (pos) => {
+    const newParticles = Array.from({ length: 12 }).map(() => ({
+      id: Math.random(),
+      position: [pos.x, pos.y, pos.z],
+      color: "yellow"
+    }))
+    setParticles((prev) => [...prev, ...newParticles])
+
+    // 1.5秒後に配列から消してメモリを節約
+    setTimeout(() => {
+      setParticles((prev) => prev.filter(p => !newParticles.some(np => np.id === p.id)))
+    },1500)
+  }
+
+  // ボールを消去する共通関数(引数で score か miss か選べるようにすると便利)
   // 2. ボールを消去する
-  const removeBall = (id) => {
+  const removeBall = (id, isCapture, other) => {
     setBalls((prev) => prev.filter((ball) => ball.id !== id))
-    setScore((s) => s + 1)
+    if(isCapture) {
+      setScore((s) => s + 1)
+      if(other) {
+         // 衝突した相手(ボール)の位置で爆発
+        const pos = other.rigidBody.translation()
+        createExplosion(pos)
+      }
+    } else {
+      setMiss((m) => m + 1)
+    }
   }
   return (
-    <Canvas shadows camera={{ position: [0, 5, 10]}}>
-      <Environment preset="city" />
-      <ambientLight intensity={0.5} />
+    <div style={{ width: '100vw', height: '100vh', position: 'relative'}}>
+      <Canvas shadows camera={{ position: [0, 5, 10]}}>
+        <Environment preset="city" />
+        <ambientLight intensity={0.5} />
 
-      {/* スコア表示(dreiのText) */}
-      <Text position={[0, 4, 0]} fontSize={1} color="white">
-        SCORE: {score}
-      </Text>
+        {/* スコア表示(dreiのText) */}
+        <Text position={[-2, 4, 0]} fontSize={0.5} color="white">
+          SCORE: {score}
+        </Text>
+        <Text position={[2, 4, 0]} fontSize={0.5} color="red">
+          MISS: {miss}
+        </Text>
 
-      <Physics debug>
-        {/* balls配列を map で描画 */}
-        {balls.map((b) => (
-          <RigidBody key={b.id} name={b.id} colliders="ball" position={b.position} restitution={0.4 + Math.random()}>
-            <mesh castShadow >
-              <sphereGeometry args={[0.3]} />
-              <meshStandardMaterial color="cyan" />
+        <Physics paused={!isPlaying}> {/* 5. 物理演算も一時停止させる */}
+          {particles.map(p => (
+            <Particle key={p.id} position={p.position} color={p.color} />
+          ))}
+          {/* balls配列を map で描画 */}
+          {balls.map((b) => (
+            <RigidBody key={b.id} name={b.id} colliders="ball" position={b.position} restitution={0.4 + Math.random()}>
+              <mesh castShadow >
+                <sphereGeometry args={[0.3]} />
+                <meshStandardMaterial color="cyan" />
+              </mesh>
+            </RigidBody>
+          ))}
+
+          <Bucket onCapture={(id, other) => isPlaying && removeBall(id, true, other)} />
+
+
+          <RigidBody
+          type="fixed"
+          sensor
+          position={[0, -1.5, 0]} // 床の少し上に配置
+          onIntersectionEnter={({ other }) => {
+            const hitId = other.rigidBodyObject.name
+            removeBall(hitId, false)
+          }}
+          >
+            {/* 横に長く、どこに落ちても検知できるようにする */}
+            <CuboidCollider args={[10, 0.1, 10]} />
+          </RigidBody>
+
+            {/* 床 */}
+          <RigidBody type="fixed" position={[0, -2, 0]}>
+            <mesh receiveShadow>
+              <boxGeometry args={[20, 0.5, 20]} />
+              <meshStandardMaterial color="#222" />
             </mesh>
           </RigidBody>
-        ))}
+        </Physics>
 
-        <Bucket onCapture={removeBall} />
-
-          {/* 床 */}
-        <RigidBody type="fixed" position={[0, -2, 0]}>
-          <mesh receiveShadow>
-            <boxGeometry args={[20, 0.5, 20]} />
-            <meshStandardMaterial color="#222" />
-          </mesh>
-        </RigidBody>
-      </Physics>
-
-      <OrbitControls />
-    </Canvas>
+        <OrbitControls />
+      </Canvas>
+      {/* 6. ゲームオーバー画面とりスタットボタン(HTMLオーバーレイ) */}
+      {!isPlaying && (
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          backgrountColor: 'rgba(0, 0, 0, 0.7)',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          color: 'white',
+          zIndex: 10
+        }}>
+          {hasStarted && <h1 tyle={{ FontFace: '3rem', marginBottom: '20px'}}>GAME OVER</h1>}
+          {hasStarted && <p style={{ fontSize: '1.5rem'}}>Final Score: {score}</p>}
+          <button
+            onClick={startGame}
+            style={{
+              padding: '15px 40px',
+              fontSize: '1.5rem',
+              cursor: 'pointer',
+              border: 'none',
+              backgroundColor: '#444',
+              color: 'white'
+            }}
+          >
+            {hasStarted ? 'RESTART' : 'START GAME' }
+          </button>
+        </div>
+      )}
+    </div>
   )
 }
 export default Example8;
