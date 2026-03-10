@@ -13,6 +13,8 @@ import Example6 from './pages/Example6.jsx'
 import Example7 from './pages/Example7.jsx'
 import Example8 from './pages/Example8.jsx'
 import Example9 from './pages/Example9.jsx'
+import Example10 from './pages/Example10.jsx'
+import Example11 from './pages/Example11.jsx'
 
 
 createRoot(document.getElementById('root')).render(
@@ -30,6 +32,8 @@ createRoot(document.getElementById('root')).render(
           <Route path="example7" element={<Example7 />} />
           <Route path="example8" element={<Example8 />} />
           <Route path="example9" element={<Example9 />} />
+          <Route path="example10" element={<Example10 />} />
+          <Route path="example11" element={<Example11 />} />
         </Route>
       </Routes>
     </BrowserRouter>

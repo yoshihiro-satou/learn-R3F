@@ -13,6 +13,8 @@ function App() {
     <Link to="examples/example7">Example7へ</Link>
     <Link to="examples/example8">Example8へ</Link>
     <Link to="examples/example9">Example9へ</Link>
+    <Link to="examples/example10">Example10へ</Link>
+    <Link to="examples/example11">Example11へ</Link>
     </>
   )
 }
