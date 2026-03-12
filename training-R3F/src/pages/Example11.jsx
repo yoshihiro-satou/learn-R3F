@@ -7,6 +7,7 @@ import { TrailDot } from './TrailDot'
 import { StarField } from './StarField'
 import { ClickExplosion } from './ClickExplosion'
 import { ShakeController } from './ShakeController'
+import { CameraController } from './CameraController'
 
 const MouseTracker = ({ onMove }) => {
   // マウスの動きを監視して、親に座標を伝えるだけのコンポーネント
@@ -27,8 +28,6 @@ const Example11 = () => {
   const handleClick = (e) => {
   // クリックした3D空間の座標を取得
     if (!e.point) return;
-
-    setShake(true)
     // 揺れを開始（数値が大きいほど激しく揺れる)
     setShake(Math.random() * 0.2 + 0.1)
 
@@ -64,6 +63,8 @@ const Example11 = () => {
         <StarField isExploding={isFlashing}/>
 
         <ShakeController shakeIntebsity={shake} />
+
+        <CameraController isFlashing={isFlashing} />
 
         {explosions.map(ex => (
           <ClickExplosion key={ex.id} position={ex.position} />

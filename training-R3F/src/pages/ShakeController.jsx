@@ -10,7 +10,7 @@ export const ShakeController = ({ shakeIntebsity }) => {
     if(shakeIntebsity > 0) {
       intensity.current = shakeIntebsity
     }
-  }, [shakeIntebsity])
+  }, [shakeIntebsity, camera])
 
   useFrame(() => {
     if(intensity.current > 0) {
@@ -24,8 +24,8 @@ export const ShakeController = ({ shakeIntebsity }) => {
       // 揺れが小さくなったらカメラをもとの位置(0, 0, 0)に引き戻す
       if(intensity.current < 0.001) {
         intensity.current = 0
-        camera.position.x += (0-camera.position.x) * 0.1
-        camera.position.y += (0-camera.position.y) * 0.1
+        camera.position.x += (0 - camera.position.x) * 0.1
+        camera.position.y += (0 - camera.position.y) * 0.1
       }
     }
   })
